@@ -1,13 +1,13 @@
-# Headles React Carousel
+# Headless React Carousel
 
 ## Install
 
 ```bash
-pnpm add headless-react-carousel
+pnpm add @kryezy/headless-react-carousel
 # or
-npm install headless-react-carousel
+npm install @kryezy/headless-react-carousel
 # or
-yarn add headless-react-carousel
+yarn add @kryezy/headless-react-carousel
 # or other package manager equivalent
 ```
 
@@ -147,7 +147,7 @@ import {
   CarouselItemButton,
   CarouselPrev,
   CarouselNext,
-} from "headless-react-carousel";
+} from "@kryezy/headless-react-carousel";
 
 export function App() {
   return (
