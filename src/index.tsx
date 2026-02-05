@@ -13,6 +13,7 @@ function noop() {}
 
 export type ScrollPosition = "start" | "middle" | "end";
 export type CarouselMode = "stop" | "loop";
+export type CarouselDirection = "vertical" | "horizontal";
 
 export type CarouselContextObject = {
   carouselCount: number;
@@ -29,23 +30,45 @@ export type CarouselContextObject = {
 /**
  * Ref - https://iykethe1st.hashnode.dev/a-react-ref-adventure-creating-a-smooth-scrolling-carousel-using-react-and-tailwind-css
  */
-export function useCarousel(carouselCount: number, loop = true) {
-  const sliderItemsRef = useRef<HTMLElement>(null);
+export type UseCarouselOptions = {
+  carouselCount: number;
+  loop: boolean;
+  direction?: CarouselDirection;
+};
+
+export function useCarousel({
+  carouselCount,
+  loop = true,
+  direction = "horizontal",
+}: UseCarouselOptions) {
+  const sliderItemsRef = useRef<HTMLDivElement>(null);
   const [currentCarousel, setCurrentCarousel] = useState(0);
   const [scrollPosition, setScrollPosition] = useState<ScrollPosition>("start");
 
-  const scrollTo = useCallback<CarouselContextObject["scrollTo"]>((index) => {
-    const container = sliderItemsRef.current;
-    if (!container) {
-      return;
-    }
+  const scrollTo = useCallback<CarouselContextObject["scrollTo"]>(
+    (index) => {
+      const container = sliderItemsRef.current;
+      if (!container) {
+        return;
+      }
 
-    const nextScrollLeft = index * container.offsetWidth;
-    container.scrollTo({
-      left: nextScrollLeft,
-      behavior: "smooth",
-    });
-  }, []);
+      let nextScrollLeft: number | undefined;
+      if (direction === "horizontal") {
+        nextScrollLeft = index * container.offsetWidth;
+      }
+      let nextScrollTop: number | undefined;
+      if (direction === "vertical") {
+        nextScrollTop = index * container.offsetHeight;
+      }
+
+      container.scrollTo({
+        left: nextScrollLeft,
+        top: nextScrollTop,
+        behavior: "smooth",
+      });
+    },
+    [direction],
+  );
 
   const scrollToPrevious = useCallback<
     CarouselContextObject["scrollToPrevious"]
@@ -56,16 +79,28 @@ export function useCarousel(carouselCount: number, loop = true) {
     }
 
     const isFirstCarousel = currentCarousel === 0;
-    let nextScrollLeft = container.scrollLeft - container.offsetWidth;
-    if (isFirstCarousel && loop) {
-      nextScrollLeft = container.offsetWidth * carouselCount - 1;
+    let nextScrollLeft: number | undefined;
+    if (direction === "horizontal") {
+      nextScrollLeft = container.scrollLeft - container.offsetWidth;
+      if (isFirstCarousel && loop) {
+        nextScrollLeft = container.offsetWidth * carouselCount - 1;
+      }
+    }
+
+    let nextScrollTop: number | undefined;
+    if (direction === "vertical") {
+      nextScrollTop = container.scrollTop - container.offsetHeight;
+      if (isFirstCarousel && loop) {
+        nextScrollTop = container.offsetHeight * carouselCount - 1;
+      }
     }
 
     container.scrollTo({
+      top: nextScrollTop,
       left: nextScrollLeft,
       behavior: "smooth",
     });
-  }, [currentCarousel, carouselCount, loop]);
+  }, [currentCarousel, carouselCount, loop, direction]);
 
   const scrollToNext = useCallback<
     CarouselContextObject["scrollToNext"]
@@ -76,16 +111,28 @@ export function useCarousel(carouselCount: number, loop = true) {
     }
 
     const isLastCarousel = currentCarousel === carouselCount - 1;
-    let nextScrollLeft = container.scrollLeft + container.offsetWidth;
-    if (isLastCarousel && loop) {
-      nextScrollLeft = 0;
+    let nextScrollLeft: number | undefined;
+    if (direction === "horizontal") {
+      nextScrollLeft = container.scrollLeft + container.offsetWidth;
+      if (isLastCarousel && loop) {
+        nextScrollLeft = 0;
+      }
+    }
+
+    let nextScrollTop: number | undefined;
+    if (direction === "vertical") {
+      nextScrollTop = container.scrollTop + container.offsetHeight;
+      if (isLastCarousel && loop) {
+        nextScrollTop = 0;
+      }
     }
 
     container.scrollTo({
       left: nextScrollLeft,
+      top: nextScrollTop,
       behavior: "smooth",
     });
-  }, [currentCarousel, carouselCount, loop]);
+  }, [currentCarousel, carouselCount, loop, direction]);
 
   const handleScroll = useCallback<
     CarouselContextObject["handleScroll"]
@@ -152,11 +199,13 @@ export type CarouselModeProps = CarouselStopModeProps | CarouselLoopModeProps;
 export type CarouselProps = CarouselModeProps & {
   children?: React.ReactNode;
   carouselCount?: number;
+  direction?: CarouselDirection;
 };
 
 export function Carousel({
   children,
   carouselCount = 0,
+  direction = "horizontal",
   ...restProps
 }: CarouselProps) {
   const isLoop = restProps.mode === "loop";
@@ -169,8 +218,11 @@ export function Carousel({
     scrollToNext,
     scrollToPrevious,
     handleScroll,
-  } = useCarousel(carouselCount, isLoop);
-
+  } = useCarousel({
+    carouselCount,
+    loop: isLoop,
+    direction,
+  });
   useEffect(() => {
     if (restProps.mode !== "loop" || !restProps.auto) {
       return;
